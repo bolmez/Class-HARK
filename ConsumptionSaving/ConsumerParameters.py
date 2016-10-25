@@ -1,14 +1,6 @@
 '''
 Specifies examples of the full set of parameters required to solve various
-<<<<<<< HEAD
-<<<<<<< HEAD
-consumption-saving models.  These models can be found in ConsIndShockModel,
-=======
 consumption-saving models.  Such models begin with "Cons", e.g. ConsIndShockModel,
->>>>>>> master
-=======
-consumption-saving models.  Such models begin with "Cons", e.g. ConsIndShockModel,
->>>>>>> master
 ConsAggShockModel, ConsPrefShockModel, and ConsMarkovModel.
 '''
 from copy import copy

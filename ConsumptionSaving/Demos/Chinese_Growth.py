@@ -177,10 +177,12 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
 
     # Set the uncertainty in the high-growth state to the desired amount, keeping in mind
     # that PermShkStd is a list of length 1
-    PrmShkStd_multiplier    = PrmShkVar_multiplier ** 1.3
-    IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] * PrmShkStd_multiplier] #high variation
+    calcNatlSavingRate.mu = .5
+    PrmShkStd_multiplier    = calcNatlSavingRate.mu*2
 
-    calcNatlSavingRate.mu = (IncomeParams.PermShkStd[0] - LowGrowth_PermShkStd[0])/2 #this is mu by the equation
+    IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + PrmShkStd_multiplier] #high variation with the new equation
+    #2 is my assigned number for the difference of ghigh-glow
+      
     
     # Construct the appropriate income distributions
     HighGrowthIncomeDstn = constructLognormalIncomeProcessUnemployment(IncomeParams)[0][0]

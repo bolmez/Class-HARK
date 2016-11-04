@@ -170,12 +170,18 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
     # First, make a deepcopy of the ChineseConsumerTypes (each with their own discount factor), 
     # because we are going to alter them
     ChineseConsumerTypesNew = deepcopy(ChineseConsumerTypes)
+    
+    '''
+    the lines for the assignment
+    '''
 
     # Set the uncertainty in the high-growth state to the desired amount, keeping in mind
     # that PermShkStd is a list of length 1
-    PrmShkStd_multiplier    = PrmShkVar_multiplier ** .5
-    IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] * PrmShkStd_multiplier] 
+    PrmShkStd_multiplier    = PrmShkVar_multiplier ** 1.3
+    IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] * PrmShkStd_multiplier] #high variation
 
+    calcNatlSavingRate.mu = (IncomeParams.PermShkStd[0] - LowGrowth_PermShkStd[0])/2 #this is mu by the equation
+    
     # Construct the appropriate income distributions
     HighGrowthIncomeDstn = constructLognormalIncomeProcessUnemployment(IncomeParams)[0][0]
 
@@ -259,6 +265,8 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
     # saving rate
     NatlSavingRate = (NatlIncome - NatlCons)/NatlIncome
 
+    print"Mu is %r with %r variance" %(calcNatlSavingRate.mu, PrmShkVar_multiplier)
+   
     return NatlSavingRate
 
 
@@ -307,3 +315,4 @@ plt.plot(quarters_to_plot,NatlSavingsRates[4],label=str(PermShkVarMultipliers[4]
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
            ncol=2, mode="expand", borderaxespad=0.) #put the legend on top
 
+#print "Mu is %r ." %mu

@@ -174,8 +174,9 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
 
     # Set the uncertainty in the high-growth state to the desired amount, keeping in mind
     # that PermShkStd is a list of length 1
-    PrmShkStd_multiplier    = PrmShkVar_multiplier ** .5
-    IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] * PrmShkStd_multiplier] 
+    calcNatlSavingRate.mu = .2
+    PrmShkStd_multiplier  = calcNatlSavingRate.mu*3
+    IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + PrmShkStd_multiplier]
 
     # Construct the appropriate income distributions
     HighGrowthIncomeDstn = constructLognormalIncomeProcessUnemployment(IncomeParams)[0][0]
@@ -308,3 +309,4 @@ plt.plot(quarters_to_plot,NatlSavingsRates[4],label=str(PermShkVarMultipliers[4]
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
            ncol=2, mode="expand", borderaxespad=0.) #put the legend on top
 
+print"Mu is %r" %(calcNatlSavingRate.mu)

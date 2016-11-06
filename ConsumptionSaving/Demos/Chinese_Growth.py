@@ -174,7 +174,7 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
 
     # Set the uncertainty in the high-growth state to the desired amount, keeping in mind
     # that PermShkStd is a list of length 1
-    calcNatlSavingRate.mu = .2
+    calcNatlSavingRate.mu = 0.07
     PrmShkStd_multiplier  = calcNatlSavingRate.mu*3
     IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + PrmShkStd_multiplier]
 

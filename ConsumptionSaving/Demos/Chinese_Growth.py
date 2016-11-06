@@ -59,8 +59,9 @@ import numpy as np
 # For a Markov model, we need a Markov transition array.  Create that array.
 # Remember, for this simple example, we just have a low-growth state, and a high-growth state
 StateCount                      = 2 #number of Markov states
-ProbGrowthEnds                  = (1./160.) #probability agents assign to the high-growth state ending
-MrkvArray                       = np.array([[1.,0.],[ProbGrowthEnds,1.-ProbGrowthEnds]]) #Markov array
+ProbGrowthEnds                  = (1./10.) #probability agents assign to the high-growth state ending
+ProbGrowthStarts                = (1./25.) #probability agents assign to the high-growth state starting
+MrkvArray                       = np.array([[1.-ProbGrowthStarts,ProbGrowthStarts],[ProbGrowthEnds,1.-ProbGrowthEnds]]) #Markov array
 init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a parameter
 
 # One other parameter to change: the number of agents in simulation

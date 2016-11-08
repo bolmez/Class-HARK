@@ -10,7 +10,7 @@ import numpy as np
 # --- Define all of the parameters for the perfect foresight model ------------
 # -----------------------------------------------------------------------------
 
-CRRA = 7.0                          # Coefficient of relative risk aversion
+CRRA = 2.0                          # Coefficient of relative risk aversion
 Rfree = 1.03                        # Interest factor on assets
 DiscFac = 0.96                      # Intertemporal discount factor
 LivPrb = [0.98]                     # Survival probability
@@ -50,7 +50,7 @@ tax_rate = 0.0                      # Flat income tax rate
 T_retire = 0                        # Period of retirement (0 --> no retirement)
 
 # A few other parameters
-BoroCnstArt = 0.0                  # Artificial borrowing constraint; imposed minimum level of end-of period assets
+BoroCnstArt = 0.0                   # Artificial borrowing constraint; imposed minimum level of end-of period assets
 CubicBool = True                    # Use cubic spline interpolation when True, linear interpolation when False
 vFuncBool = False                   # Whether to calculate the value function during solution
 T_total = 1                         # Total number of periods in cycle for this agent
@@ -76,7 +76,7 @@ init_idiosyncratic_shocks = { 'CRRA': CRRA,
                               'IncUnemp': IncUnemp,
                               'IncUnempRet': IncUnempRet,
                               'BoroCnstArt': BoroCnstArt,
-                              'tax_rate':0.0,
+                              'tax_rate': tax_rate,
                               'vFuncBool':vFuncBool,
                               'CubicBool':CubicBool,
                               'T_retire':T_retire,

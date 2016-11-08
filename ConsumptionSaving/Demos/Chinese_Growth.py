@@ -60,7 +60,10 @@ import numpy as np
 # Remember, for this simple example, we just have a low-growth state, and a high-growth state
 StateCount                      = 2 #number of Markov states
 ProbGrowthEnds                  = (1./160.) #probability agents assign to the high-growth state ending
-MrkvArray                       = np.array([[1.,0.],[ProbGrowthEnds,1.-ProbGrowthEnds]]) #Markov array
+# for multiplicative case
+## MrkvArray                       = np.array([[1.,0.],[ProbGrowthEnds,1.-ProbGrowthEnds]]) #Markov array
+# for additive case
+MrkvArray                       = np.array([[.96,.04],[.1,.9]]) #Markov array
 init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a parameter
 
 # One other parameter to change: the number of agents in simulation
@@ -173,8 +176,17 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
 
     # Set the uncertainty in the high-growth state to the desired amount, keeping in mind
     # that PermShkStd is a list of length 1
-    PrmShkStd_multiplier    = PrmShkVar_multiplier ** .5
-    IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] * PrmShkStd_multiplier] 
+
+    # multiplicative shocks
+    ##PrmShkStd_multiplier    = PrmShkVar_multiplier ** .5
+    ##IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] * PrmShkStd_multiplier] 
+    
+    # additive shocks
+    growthInLow = .01
+    growthInHigh = .04
+    mu = PrmShkVar_multiplier
+    IncomeParams.PermShkStd = [(LowGrowth_PermShkStd[0] ** 2 + mu * (growthInHigh - growthInLow)) ** .5]
+    
 
     # Construct the appropriate income distributions
     HighGrowthIncomeDstn = constructLognormalIncomeProcessUnemployment(IncomeParams)[0][0]
@@ -216,7 +228,7 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
         """
         
         ## Now, simulate 500 quarters to get to steady state, then 40 years of high growth
-        ChineseConsumerTypeNew.sim_periods = 660 
+        ChineseConsumerTypeNew.sim_periods = 660 # 500 + 160 (quarters in 40 years)
         
 
         ## If we wanted to *simulate* the Markov states according to agents' perceived 
@@ -284,7 +296,9 @@ quarters_to_plot = np.arange(-quarters_before_reform_to_plot ,160,1)
 NatlSavingsRates = []
 
 # Create a list of floats to multiply the variance of the permanent shock to income by
-PermShkVarMultipliers = (1.,2.,4.,8.,11.)
+
+PermShkVarMultipliers = (.1,.3,.7,.9,1.)
+#PermShkVarMultipliers = (1.,2.,4.,8.,11.)
 
 # Loop through the desired multipliers, then get the path of the national saving rate
 # following economic reforms, assuming that the variance of the permanent income shock
@@ -292,18 +306,26 @@ PermShkVarMultipliers = (1.,2.,4.,8.,11.)
 index = 0
 for PermShkVarMultiplier in PermShkVarMultipliers:
     NatlSavingsRates.append(calcNatlSavingRate(PermShkVarMultiplier,RNG_seed = index)[-160 - quarters_before_reform_to_plot :])
-    index +=1
+    index += 1
 
 # We've calculated the path of the national saving rate as we wanted
 # All that's left is to graph the results!
 import pylab as plt
 plt.ylabel('Natl Savings Rate')
 plt.xlabel('Quarters Since Economic Reforms')
-plt.plot(quarters_to_plot,NatlSavingsRates[0],label=str(PermShkVarMultipliers[0]) + ' x variance')
-plt.plot(quarters_to_plot,NatlSavingsRates[1],label=str(PermShkVarMultipliers[1]) + ' x variance')
-plt.plot(quarters_to_plot,NatlSavingsRates[2],label=str(PermShkVarMultipliers[2]) + ' x variance')
-plt.plot(quarters_to_plot,NatlSavingsRates[3],label=str(PermShkVarMultipliers[3]) + ' x variance')
-plt.plot(quarters_to_plot,NatlSavingsRates[4],label=str(PermShkVarMultipliers[4]) + ' x variance')
+# multiplicative shocks
+##plt.plot(quarters_to_plot,NatlSavingsRates[0],label=str(PermShkVarMultipliers[0]) + ' x variance')
+##plt.plot(quarters_to_plot,NatlSavingsRates[1],label=str(PermShkVarMultipliers[1]) + ' x variance')
+##plt.plot(quarters_to_plot,NatlSavingsRates[2],label=str(PermShkVarMultipliers[2]) + ' x variance')
+##plt.plot(quarters_to_plot,NatlSavingsRates[3],label=str(PermShkVarMultipliers[3]) + ' x variance')
+##plt.plot(quarters_to_plot,NatlSavingsRates[4],label=str(PermShkVarMultipliers[4]) + ' x variance')
+
+# additive shocks
+plt.plot(quarters_to_plot,NatlSavingsRates[0],label='mu = ' + str(PermShkVarMultipliers[0]))
+plt.plot(quarters_to_plot,NatlSavingsRates[1],label='mu = ' + str(PermShkVarMultipliers[1]))
+plt.plot(quarters_to_plot,NatlSavingsRates[2],label='mu = ' + str(PermShkVarMultipliers[2]))
+plt.plot(quarters_to_plot,NatlSavingsRates[3],label='mu = ' + str(PermShkVarMultipliers[3]))
+plt.plot(quarters_to_plot,NatlSavingsRates[4],label='mu = ' + str(PermShkVarMultipliers[4]))
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
            ncol=2, mode="expand", borderaxespad=0.) #put the legend on top
 

@@ -59,8 +59,8 @@ import numpy as np
 # For a Markov model, we need a Markov transition array.  Create that array.
 # Remember, for this simple example, we just have a low-growth state, and a high-growth state
 StateCount                      = 2 #number of Markov states
-ProbGrowthEnds                  = (1/10) #probability agents assign to the high-growth state ending
-ProbGrowthStarts                = (1/25)
+ProbGrowthEnds                  = (1/40) #probability agents assign to the high-growth state ending
+ProbGrowthStarts                = (1/100)
 MrkvArray                       = np.array([[ProbGrowthStarts,1.-ProbGrowthStarts],[ProbGrowthEnds,1.-ProbGrowthEnds]]) #Markov array
 init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a parameter
 
@@ -73,7 +73,7 @@ init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a par
 # by changing the appropriate value in the init_China_parameters_dictionary; however,
 # they can also be changed later, by altering the appropriate attribute of the initialized
 # MarkovConsumerType.
-init_China_parameters['Nagents']   = 10000
+init_China_parameters['Nagents']   = 50000
 
 ### Import and initialize the HARK ConsumerType we want 
 ### Here, we bring in an agent making a consumption/savings decision every period, subject
@@ -295,7 +295,7 @@ quarters_to_plot = np.arange(-quarters_before_reform_to_plot ,160,1)
 NatlSavingsRates = []
 
 # Create a list of floats to multiply the variance of the permanent shock to income by
-PermShkVarMultipliers = (1.,2.,4.,8.,11.)
+PermShkVarMultipliers = (1, 0)
 
 # Loop through the desired multipliers, then get the path of the national saving rate
 # following economic reforms, assuming that the variance of the permanent income shock
@@ -311,11 +311,11 @@ import pylab as plt
 plt.ylabel('Natl Savings Rate')
 plt.xlabel('Quarters Since Economic Reforms')
 plt.plot(quarters_to_plot,NatlSavingsRates[0],label=str(PermShkVarMultipliers[0]) + ' x variance')
-plt.plot(quarters_to_plot,NatlSavingsRates[1],label=str(PermShkVarMultipliers[1]) + ' x variance')
-plt.plot(quarters_to_plot,NatlSavingsRates[2],label=str(PermShkVarMultipliers[2]) + ' x variance')
-plt.plot(quarters_to_plot,NatlSavingsRates[3],label=str(PermShkVarMultipliers[3]) + ' x variance')
-plt.plot(quarters_to_plot,NatlSavingsRates[4],label=str(PermShkVarMultipliers[4]) + ' x variance')
-plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-           ncol=2, mode="expand", borderaxespad=0.) #put the legend on top
+#plt.plot(quarters_to_plot,NatlSavingsRates[1],label=str(PermShkVarMultipliers[1]) + ' x variance')
+#plt.plot(quarters_to_plot,NatlSavingsRates[2],label=str(PermShkVarMultipliers[2]) + ' x variance')
+#plt.plot(quarters_to_plot,NatlSavingsRates[3],label=str(PermShkVarMultipliers[3]) + ' x variance')
+#plt.plot(quarters_to_plot,NatlSavingsRates[4],label=str(PermShkVarMultipliers[4]) + ' x variance')
+#plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+         #  ncol=2, mode="expand", borderaxespad=0.) #put the legend on top
 
 #print "Mu is %r ." %mu

@@ -73,7 +73,7 @@ init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a par
 # by changing the appropriate value in the init_China_parameters_dictionary; however,
 # they can also be changed later, by altering the appropriate attribute of the initialized
 # MarkovConsumerType.
-init_China_parameters['Nagents']   = 10000
+init_China_parameters['Nagents']   = 20000
 
 ### Import and initialize the HARK ConsumerType we want 
 ### Here, we bring in an agent making a consumption/savings decision every period, subject
@@ -175,7 +175,7 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
 
     # Set the uncertainty in the high-growth state to the desired amount, keeping in mind
     # that PermShkStd is a list of length 1
-    calcNatlSavingRate.mu = 0.0190
+    calcNatlSavingRate.mu = 0.02
     PrmShkStd_multiplier  = calcNatlSavingRate.mu*2
     IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + PrmShkStd_multiplier]
 

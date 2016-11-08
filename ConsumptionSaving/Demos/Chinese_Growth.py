@@ -86,7 +86,8 @@ ChinaExample = MarkovConsumerType(**init_China_parameters)
 # Do that here, except income distribution.  That will be done later, because we want to examine
 # the effects of different income distributions.
 
-ChinaExample.assignParameters(PermGroFac = [np.array([1.,1.03 ** (.25)])], #needs to be a list, with 0th element of shape of shape (StateCount,)
+GrowthFactorMultiple=1.06 # Rate of annual growth in the fast-growth regime
+ChinaExample.assignParameters(PermGroFac = [np.array([1.,GrowthFactorMultiple ** (.25)])], #needs to be a list, with 0th element of shape of shape (StateCount,)
                               Rfree      = np.array(StateCount*[init_China_parameters['Rfree']]), #need to be an array, of shape (StateCount,)
                               LivPrb     = [np.array(StateCount*[init_China_parameters['LivPrb']][0])], #needs to be a list, with 0th element of shape of shape (StateCount,)
                               cycles     = 0)

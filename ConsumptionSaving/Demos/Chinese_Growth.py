@@ -59,11 +59,13 @@ import numpy as np
 # For a Markov model, we need a Markov transition array.  Create that array.
 # Remember, for this simple example, we just have a low-growth state, and a high-growth state
 StateCount                      = 2 #number of Markov states
-ProbGrowthEnds                  = (1./160.) #probability agents assign to the high-growth state ending
+#ProbGrowthEnds                  = (1./160.) #probability agents assign to the high-growth state ending
 # for multiplicative case
 ## MrkvArray                       = np.array([[1.,0.],[ProbGrowthEnds,1.-ProbGrowthEnds]]) #Markov array
 # for additive case
-MrkvArray                       = np.array([[.96,.04],[.1,.9]]) #Markov array
+ProbGrowthEnds                  = (1./40.)
+ProbGrowthStarts                 = (1./100.)
+MrkvArray                       = np.array([[1.-ProbGrowthStarts,ProbGrowthStarts],[ProbGrowthEnds,1.-ProbGrowthEnds]]) #Markov array
 init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a parameter
 
 # One other parameter to change: the number of agents in simulation
@@ -185,8 +187,8 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
     growthInLow = .01
     growthInHigh = .04
     mu = PrmShkVar_multiplier
-    IncomeParams.PermShkStd = [(LowGrowth_PermShkStd[0] ** 2 + mu * (growthInHigh - growthInLow)) ** .5]
-    
+    #IncomeParams.PermShkStd = [(LowGrowth_PermShkStd[0] ** 2 + mu * (growthInHigh - growthInLow)) ** .5]
+    IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + mu * (growthInHigh - growthInLow)]
 
     # Construct the appropriate income distributions
     HighGrowthIncomeDstn = constructLognormalIncomeProcessUnemployment(IncomeParams)[0][0]
@@ -297,7 +299,7 @@ NatlSavingsRates = []
 
 # Create a list of floats to multiply the variance of the permanent shock to income by
 
-PermShkVarMultipliers = (.1,.3,.7,.9,1.)
+PermShkVarMultipliers = (1.,2.,2.3,2.75,3.)
 #PermShkVarMultipliers = (1.,2.,4.,8.,11.)
 
 # Loop through the desired multipliers, then get the path of the national saving rate

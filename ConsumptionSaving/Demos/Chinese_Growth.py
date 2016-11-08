@@ -86,7 +86,7 @@ ChinaExample = MarkovConsumerType(**init_China_parameters)
 # Do that here, except income distribution.  That will be done later, because we want to examine
 # the effects of different income distributions.
 
-ChinaExample.assignParameters(PermGroFac = [np.array([1.,1.06 ** (.25)])], #needs to be a list, with 0th element of shape of shape (StateCount,)
+ChinaExample.assignParameters(PermGroFac = [np.array([1.,1.03 ** (.25)])], #needs to be a list, with 0th element of shape of shape (StateCount,)
                               Rfree      = np.array(StateCount*[init_China_parameters['Rfree']]), #need to be an array, of shape (StateCount,)
                               LivPrb     = [np.array(StateCount*[init_China_parameters['LivPrb']][0])], #needs to be a list, with 0th element of shape of shape (StateCount,)
                               cycles     = 0)
@@ -174,7 +174,7 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
 
     # Set the uncertainty in the high-growth state to the desired amount, keeping in mind
     # that PermShkStd is a list of length 1
-    calcNatlSavingRate.mu = 0.07
+    calcNatlSavingRate.mu = 0.0275
     PrmShkStd_multiplier  = calcNatlSavingRate.mu*3
     IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + PrmShkStd_multiplier]
 

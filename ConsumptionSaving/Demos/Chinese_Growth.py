@@ -73,7 +73,7 @@ init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a par
 # by changing the appropriate value in the init_China_parameters_dictionary; however,
 # they can also be changed later, by altering the appropriate attribute of the initialized
 # MarkovConsumerType.
-init_China_parameters['Nagents']   = 20000
+init_China_parameters['Nagents']   = 50000
 
 ### Import and initialize the HARK ConsumerType we want 
 ### Here, we bring in an agent making a consumption/savings decision every period, subject

@@ -182,7 +182,7 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
     # that PermShkStd is a list of length 1
 
  
-    calcNatlSavingRate.mu = 0.019
+    calcNatlSavingRate.mu = 0.02
     PrmShkStd_multiplier  = calcNatlSavingRate.mu*PctGroRteHi
 
     IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + PrmShkStd_multiplier]

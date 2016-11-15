@@ -73,11 +73,9 @@ init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a par
 # by changing the appropriate value in the init_China_parameters_dictionary; however,
 # they can also be changed later, by altering the appropriate attribute of the initialized
 # MarkovConsumerType.
-<<<<<<< HEAD
-init_China_parameters['Nagents']   = 10000
-=======
-init_China_parameters['Nagents']   = 20000
->>>>>>> GrowthAccel-CDC
+
+init_China_parameters['Nagents']   = 50000
+
 
 ### Import and initialize the HARK ConsumerType we want 
 ### Here, we bring in an agent making a consumption/savings decision every period, subject
@@ -90,12 +88,8 @@ ChinaExample = MarkovConsumerType(**init_China_parameters)
 # Do that here, except income distribution.  That will be done later, because we want to examine
 # the effects of different income distributions.
 
-<<<<<<< HEAD
-GrowthFactorMultiple=1.04 # Rate of annual growth in the fast-growth regime
-=======
-PctGroRteHi=6 # Annual rate of growth in high growth state
+PctGroRteHi=4 # Annual rate of growth in high growth state
 GrowthFactorMultiple=1.0+0.01*PctGroRteHi # Rate of annual growth in the fast-growth regime
->>>>>>> GrowthAccel-CDC
 ChinaExample.assignParameters(PermGroFac = [np.array([1.,GrowthFactorMultiple ** (.25)])], #needs to be a list, with 0th element of shape of shape (StateCount,)
                               Rfree      = np.array(StateCount*[init_China_parameters['Rfree']]), #need to be an array, of shape (StateCount,)
                               LivPrb     = [np.array(StateCount*[init_China_parameters['LivPrb']][0])], #needs to be a list, with 0th element of shape of shape (StateCount,)
@@ -184,13 +178,9 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
 
     # Set the uncertainty in the high-growth state to the desired amount, keeping in mind
     # that PermShkStd is a list of length 1
-<<<<<<< HEAD
-    calcNatlSavingRate.mu = 0.02
-    PrmShkStd_multiplier  = calcNatlSavingRate.mu*4
-=======
-    calcNatlSavingRate.mu = 0.03
+    calcNatlSavingRate.mu = 0.0188
     PrmShkStd_multiplier  = calcNatlSavingRate.mu*PctGroRteHi
->>>>>>> GrowthAccel-CDC
+
     IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + PrmShkStd_multiplier]
 
     # Construct the appropriate income distributions

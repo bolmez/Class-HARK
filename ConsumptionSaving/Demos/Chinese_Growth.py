@@ -59,12 +59,17 @@ import numpy as np
 # For a Markov model, we need a Markov transition array.  Create that array.
 # Remember, for this simple example, we just have a low-growth state, and a high-growth state
 StateCount                      = 2 #number of Markov states
+<<<<<<< HEAD
 #ProbGrowthEnds                  = (1./160.) #probability agents assign to the high-growth state ending
 # for multiplicative case
 ## MrkvArray                       = np.array([[1.,0.],[ProbGrowthEnds,1.-ProbGrowthEnds]]) #Markov array
 # for additive case
 ProbGrowthEnds                  = (1./40.)
 ProbGrowthStarts                 = (1./100.)
+=======
+ProbGrowthEnds                  = (1./40.) #probability agents assign to the high-growth state ending
+ProbGrowthStarts                = (1./100.) #probability agents assign to the high-growth state starting
+>>>>>>> GrowthAccel-CDC
 MrkvArray                       = np.array([[1.-ProbGrowthStarts,ProbGrowthStarts],[ProbGrowthEnds,1.-ProbGrowthEnds]]) #Markov array
 init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a parameter
 
@@ -77,7 +82,7 @@ init_China_parameters['MrkvArray'] = MrkvArray #assign the Markov array as a par
 # by changing the appropriate value in the init_China_parameters_dictionary; however,
 # they can also be changed later, by altering the appropriate attribute of the initialized
 # MarkovConsumerType.
-init_China_parameters['Nagents']   = 10000
+init_China_parameters['Nagents']   = 50000
 
 ### Import and initialize the HARK ConsumerType we want 
 ### Here, we bring in an agent making a consumption/savings decision every period, subject
@@ -90,7 +95,12 @@ ChinaExample = MarkovConsumerType(**init_China_parameters)
 # Do that here, except income distribution.  That will be done later, because we want to examine
 # the effects of different income distributions.
 
+<<<<<<< HEAD
 ChinaExample.assignParameters(PermGroFac = [np.array([1.,1.04 ** (.25)])], #needs to be a list, with 0th element of shape of shape (StateCount,)
+=======
+GrowthFactorMultiple=1.06 # Rate of annual growth in the fast-growth regime
+ChinaExample.assignParameters(PermGroFac = [np.array([1.,GrowthFactorMultiple ** (.25)])], #needs to be a list, with 0th element of shape of shape (StateCount,)
+>>>>>>> GrowthAccel-CDC
                               Rfree      = np.array(StateCount*[init_China_parameters['Rfree']]), #need to be an array, of shape (StateCount,)
                               LivPrb     = [np.array(StateCount*[init_China_parameters['LivPrb']][0])], #needs to be a list, with 0th element of shape of shape (StateCount,)
                               cycles     = 0)
@@ -178,6 +188,7 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
 
     # Set the uncertainty in the high-growth state to the desired amount, keeping in mind
     # that PermShkStd is a list of length 1
+<<<<<<< HEAD
 
     # multiplicative shocks
     ##PrmShkStd_multiplier    = PrmShkVar_multiplier ** .5
@@ -189,6 +200,11 @@ def calcNatlSavingRate(PrmShkVar_multiplier,RNG_seed = 0):
     mu = PrmShkVar_multiplier
     #IncomeParams.PermShkStd = [(LowGrowth_PermShkStd[0] ** 2 + mu * (growthInHigh - growthInLow)) ** .5]
     IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + mu * (growthInHigh - growthInLow)]
+=======
+    calcNatlSavingRate.mu = 0.0175
+    PrmShkStd_multiplier  = calcNatlSavingRate.mu*3
+    IncomeParams.PermShkStd = [LowGrowth_PermShkStd[0] + PrmShkStd_multiplier]
+>>>>>>> GrowthAccel-CDC
 
     # Construct the appropriate income distributions
     HighGrowthIncomeDstn = constructLognormalIncomeProcessUnemployment(IncomeParams)[0][0]
@@ -298,9 +314,13 @@ quarters_to_plot = np.arange(-quarters_before_reform_to_plot ,160,1)
 NatlSavingsRates = []
 
 # Create a list of floats to multiply the variance of the permanent shock to income by
+<<<<<<< HEAD
 
 PermShkVarMultipliers = (1.,2.,2.3,2.75,3.)
 #PermShkVarMultipliers = (1.,2.,4.,8.,11.)
+=======
+PermShkVarMultipliers = (1.,0.,0.,0.,0.)
+>>>>>>> GrowthAccel-CDC
 
 # Loop through the desired multipliers, then get the path of the national saving rate
 # following economic reforms, assuming that the variance of the permanent income shock
@@ -315,6 +335,7 @@ for PermShkVarMultiplier in PermShkVarMultipliers:
 import pylab as plt
 plt.ylabel('Natl Savings Rate')
 plt.xlabel('Quarters Since Economic Reforms')
+<<<<<<< HEAD
 # multiplicative shocks
 ##plt.plot(quarters_to_plot,NatlSavingsRates[0],label=str(PermShkVarMultipliers[0]) + ' x variance')
 ##plt.plot(quarters_to_plot,NatlSavingsRates[1],label=str(PermShkVarMultipliers[1]) + ' x variance')
@@ -328,6 +349,14 @@ plt.plot(quarters_to_plot,NatlSavingsRates[1],label='mu = ' + str(PermShkVarMult
 plt.plot(quarters_to_plot,NatlSavingsRates[2],label='mu = ' + str(PermShkVarMultipliers[2]))
 plt.plot(quarters_to_plot,NatlSavingsRates[3],label='mu = ' + str(PermShkVarMultipliers[3]))
 plt.plot(quarters_to_plot,NatlSavingsRates[4],label='mu = ' + str(PermShkVarMultipliers[4]))
+=======
+plt.plot(quarters_to_plot,NatlSavingsRates[0],label=str(PermShkVarMultipliers[0]) + ' x variance')
+#plt.plot(quarters_to_plot,NatlSavingsRates[1],label=str(PermShkVarMultipliers[1]) + ' x variance')
+#plt.plot(quarters_to_plot,NatlSavingsRates[2],label=str(PermShkVarMultipliers[2]) + ' x variance')
+#plt.plot(quarters_to_plot,NatlSavingsRates[3],label=str(PermShkVarMultipliers[3]) + ' x variance')
+#plt.plot(quarters_to_plot,NatlSavingsRates[4],label=str(PermShkVarMultipliers[4]) + ' x variance')
+>>>>>>> GrowthAccel-CDC
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
            ncol=2, mode="expand", borderaxespad=0.) #put the legend on top
 
+print"Mu is %r" %(calcNatlSavingRate.mu)

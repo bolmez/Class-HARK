@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Dec  2 11:58:21 2016
+
+@author: Pavel
+"""
+
 '''
 Nearly all of the estimations for the paper "The Distribution of Wealth and the
 Marginal Propensity to Consume", by Chris Carroll, Jiri Slacalek, Kiichi Tokuoka,
@@ -23,23 +30,26 @@ from HARKcore import AgentType
 from HARKparallel import multiThreadCommandsFake
 import SetupParamsCSTW as Params
 import ConsIndShockModel as Model
+#from ConsPrefShockModel import KinkyPrefConsumerType as ModelPref #!!! Needed to define the new class
 import ConsPrefShockModel as ModelPref # Needed to define a new class
 from ConsAggShockModel import CobbDouglasEconomy, AggShockConsumerType
-from scipy.optimize import golden, brentq, minimize_scalar
+from scipy.optimize import golden, brentq
 import matplotlib.pyplot as plt
 import csv
-myf = open('./Results/'+str(Params.do_Kinky_cases)+str(Params.do_beta_dist)+ 'W_hist.txt','w')
+
 # =================================================================
 # ====== Make an extension of the basic ConsumerType ==============
 # =================================================================
 
-class cstwMPCagent(Model.IndShockConsumerType):
+class cstwKinkyPrefAgent(ModelPref.KinkyPrefConsumerType):
     '''
-    A consumer type in the cstwMPC model; a slight modification of base ConsumerType.
+    A consumer type in the cstwKinkyPref model, which incorporates multiplicative 
+    shocks to utility each period, and a different interest rate on saving vs borrowing.
+    
     '''
     def __init__(self,time_flow=True,**kwds):
         '''
-        Make a new consumer type for the cstwMPC model.
+        Make a new consumer type for the cstwKinkyPrefAgent model.
         
         Parameters
         ----------
@@ -51,16 +61,16 @@ class cstwMPCagent(Model.IndShockConsumerType):
             
         Returns
         -------
-        new instance of cstwMPCagent
+        new instance of cstwKinkyPrefAgent
         '''
         # Initialize a basic AgentType
-        AgentType.__init__(self,solution_terminal=deepcopy(Model.IndShockConsumerType.solution_terminal_),
+        AgentType.__init__(self,solution_terminal=deepcopy(ModelPref.KinkyPrefConsumerType.solution_terminal_),
                            time_flow=time_flow,pseudo_terminal=False,**kwds)
 
         # Add consumer-type specific objects, copying to create independent versions
-        self.time_vary = deepcopy(Model.IndShockConsumerType.time_vary_)
-        self.time_inv = deepcopy(Model.IndShockConsumerType.time_inv_)
-        self.solveOnePeriod = Model.solveConsIndShock
+        self.time_vary = deepcopy(ModelPref.KinkyPrefConsumerType.time_vary_)
+        self.time_inv = deepcopy(ModelPref.KinkyPrefConsumerType.time_inv_)
+        self.solveOnePeriod = ModelPref.solveConsKinkyPref # Choose correct solver
         self.update()
         
     def simulateCSTW(self):
@@ -80,9 +90,7 @@ class cstwMPCagent(Model.IndShockConsumerType):
         '''
         self.initializeSim()
         self.simConsHistory()
-        self.W_history = self.pHist*self.bHist/self.Rfree 
-        myf.write(str(self.W_history.min()) + "\n")
-        myf.close
+        self.W_history = self.pHist*self.bHist/self.Rfree   #!!! Check. Line 1335 in ConsIndShockModel defines Rfree
         if Params.do_lifecycle:
             self.W_history = self.W_history*self.cohort_scale
         self.kappa_history = 1.0 - (1.0 - self.MPChist)**4
@@ -109,7 +117,7 @@ class cstwMPCagent(Model.IndShockConsumerType):
         self.timeFwd()
         self.resetRNG()
         if self.cycles > 0:
-            self.IncomeDstn = Model.applyFlatIncomeTax(self.IncomeDstn,
+            self.IncomeDstn = ModelPref.applyFlatIncomeTax(self.IncomeDstn,
                                                  tax_rate=self.tax_rate,
                                                  T_retire=self.T_retire,
                                                  unemployed_indices=range(0,(self.TranShkCount+1)*
@@ -150,7 +158,7 @@ def assignBetaDistribution(type_list,DiscFac_list):
     
     Parameters
     ----------
-    type_list : [cstwMPCagent]
+    type_list : [cstwKinkyPrefAgent]
         The list of types that should be assigned discount factors.
     DiscFac_list : [float] or np.array
         List of discount factors to assign to the types.
@@ -170,7 +178,44 @@ def assignBetaDistribution(type_list,DiscFac_list):
             t += 1
             j += 1
         b += 1           
-            
+
+
+def assignRdistribution(type_list,R_list,isRboro):
+    '''
+    Assigns the interest rate values in values_list to the types in type_list.  If
+    there is heterogeneity beyond the interest rate, then the same value is
+    assigned to consecutive types (that is why the function uses two while loops).
+    It allows to assign heterogeneity in the interest rate on saving and on debt.
+    
+    Parameters
+    ----------
+    type_list : [agent]
+        The list of types that should be assigned the different values.
+    R_list : [float] or np.array
+        List of values to assign to the types.
+    isRboro : boolean
+        True if the heterogeneity is in the interest rate for borrowing; if False,
+        the function assumes that the heterogeneity is in the interest rate on savings
+        
+    Returns
+    -------
+    none
+    '''
+    R_count = len(R_list)
+    type_N = len(type_list)/R_count
+    j = 0
+    b = 0
+    while j < len(type_list):
+        t = 0
+        while t < type_N:
+            if isRboro:
+                type_list[j](Rboro = R_list[b])
+            else:
+                type_list[j](Rsave = R_list[b])
+            t += 1
+            j += 1
+        b += 1                      
+
             
 # =================================================================
 # ====== Make some data analysis and reporting tools ==============
@@ -244,7 +289,7 @@ def simulateKYratioDifference(DiscFac,nabla,N,type_list,weights,total_output,tar
         Width of the uniform distribution of discount factors.
     N : int
         Number of discrete consumer types.
-    type_list : [cstwMPCagent]
+    type_list : [cstwKinkyPrefAgent]
         List of agent types to solve and simulate after assigning discount factors.
     weights : np.array
         Age-conditional array of population weights.
@@ -311,7 +356,7 @@ def makeCSTWstats(DiscFac,nabla,this_type_list,age_weight,lorenz_distance=0.0,sa
         Center of the uniform distribution of discount factors
     nabla : float
         Width of the uniform distribution of discount factors
-    this_type_list : [cstwMPCagent]
+    this_type_list : [cstwKinkyPrefAgent]
         List of agent types in the economy.
     age_weight : np.array
         Age-conditional array of weights for the wealth data.
@@ -376,10 +421,7 @@ def makeCSTWstats(DiscFac,nabla,this_type_list,age_weight,lorenz_distance=0.0,sa
     for q in range(5):
         hand_to_mouth_pct.append(np.sum(these_weights[these_quintiles == (q+1)])/hand_to_mouth_total)
     
-    if Params.do_Kinky_cases:
-        results_string = 'Estimate is Rboro=' + str(Rboro) + ', nabla=' + str(nabla) + '\n'    
-    else:
-        results_string = 'Estimate is DiscFac=' + str(DiscFac) + ', nabla=' + str(nabla) + '\n'
+    results_string = 'Estimate is DiscFac=' + str(DiscFac) + ', nabla=' + str(nabla) + '\n'
     results_string += 'Lorenz distance is ' + str(lorenz_distance) + '\n'
     results_string += 'Average MPC for all consumers is ' + mystr(kappa_all) + '\n'
     results_string += 'Average MPC in the top percentile of W/Y is ' + mystr(kappa_by_ratio_groups[0]) + '\n'
@@ -532,13 +574,13 @@ def sensitivityAnalysis(parameter,values,is_time_vary):
     Parameters
     ----------
     parameter : string
-        Name of an attribute/parameter of cstwMPCagent on which to perform a
+        Name of an attribute/parameter of cstwKinkyPrefAgent on which to perform a
         sensitivity analysis.  The attribute should be a single float.
     values : [np.array]
         Array of values that the parameter should take on in the analysis.
     is_time_vary : boolean
         Indicator for whether the parameter of analysis is time_varying (i.e. 
-        is an element of cstwMPCagent.time_vary).  While the sensitivity analysis
+        is an element of cstwKinkyPrefAgent.time_vary).  While the sensitivity analysis
         should only be used for the perpetual youth model, some parameters are
         still considered "time varying" in the consumption-saving model and 
         are encapsulated in a (length=1) list.
@@ -582,426 +624,6 @@ def sensitivityAnalysis(parameter,values,is_time_vary):
         this_type.update()
         j += 1   
    
-   
-
-###############################################################################
-
-# =============================================================================
-# ===== Make an extension of the cstwMPCagent to include KinkedRconsumers =====
-# =============================================================================
-
-class cstwKinkedRagent(Model.KinkedRconsumerType):
-    '''
-    A consumer type in the cstwKinkedR model, which is a slight modification of
-    cstwMPCagent. It uses KinkedRconsumerType from ConsIndShockModel, which 
-    allows to incorporate a different interest factor on saving and borrowing.
-    '''
-    def __init__(self,time_flow=True,**kwds):
-        '''
-        Make a new consumer type for the cstwKinkedR model.
-        
-        Parameters
-        ----------
-        time_flow : boolean
-            Indictator for whether time is "flowing" forward for this agent.        
-        **kwds : keyword arguments
-            Any number of keyword arguments of the form key=value.  Each value
-            will be assigned to the attribute named in self.
-            
-        Returns
-        -------
-        new instance of cstwKinkedRagent
-        '''
-        # Initialize a basic AgentType
-        AgentType.__init__(self,solution_terminal=deepcopy(Model.KinkedRconsumerType.solution_terminal_),
-                           time_flow=time_flow,pseudo_terminal=False,**kwds)
-
-        # Add consumer-type specific objects, copying to create independent versions
-        self.time_vary = deepcopy(Model.KinkedRconsumerType.time_vary_)
-        self.time_inv = deepcopy(Model.KinkedRconsumerType.time_inv_)
-        self.solveOnePeriod = Model.solveConsKinkedR
-        self.update()
-        
-    def simulateCSTW(self):
-        '''
-        The simulation method for the no aggregate shocks version of the model.
-        Initializes the agent type, simulates a history of state and control
-        variables, and stores the wealth history in self.W_history and the
-        annualized MPC history in self.kappa_history.
-        
-        Parameters
-        ----------
-        none
-            
-        Returns
-        -------
-        none
-        '''
-        self.initializeSim()
-        self.simConsHistory()
-        self.W_history = self.pHist*self.bHist
-        self.W_history[self.W_history <= 0] /= self.Rboro # Note the divide AND assign operator /=
-        self.W_history[self.W_history > 0] /= self.Rsave
-        myf.write(str(self.W_history.min()) + "\n")
-        myf.close
-        if Params.do_lifecycle:
-            self.W_history = self.W_history*self.cohort_scale
-        self.kappa_history = 1.0 - (1.0 - self.MPChist)**4
-        
-    def update(self):
-        '''
-        Update the income process, the assets grid, and the terminal solution.
-        
-        Parameters
-        ----------
-        none
-            
-        Returns
-        -------
-        none
-        '''
-        orig_flow = self.time_flow        
-        if self.cycles == 0: # hacky fix for labor supply l_bar
-            self.updateIncomeProcessAlt()
-        else:
-            self.updateIncomeProcess()
-        self.updateAssetsGrid()
-        self.updateSolutionTerminal()
-        self.timeFwd()
-        self.resetRNG()
-        if self.cycles > 0:
-            self.IncomeDstn = Model.applyFlatIncomeTax(self.IncomeDstn,
-                                                 tax_rate=self.tax_rate,
-                                                 T_retire=self.T_retire,
-                                                 unemployed_indices=range(0,(self.TranShkCount+1)*
-                                                 self.PermShkCount,self.TranShkCount+1))          
-        self.makeIncShkHist()
-        if not orig_flow:
-            self.timeRev()
-            
-    def updateIncomeProcessAlt(self):
-        '''
-        An alternative method for constructing the income process in the infinite
-        horizon model, where the labor supply l_bar creates a small oddity.
-        
-        Parameters
-        ----------
-        none
-            
-        Returns
-        -------
-        none
-        '''
-        tax_rate = (self.IncUnemp*self.UnempPrb)/(self.l_bar*(1.0-self.UnempPrb))
-        TranShkDstn     = deepcopy(approxMeanOneLognormal(self.TranShkCount,sigma=self.TranShkStd[0],tail_N=0))
-        TranShkDstn[0]  = np.insert(TranShkDstn[0]*(1.0-self.UnempPrb),0,self.UnempPrb)
-        TranShkDstn[1]  = np.insert(self.l_bar*TranShkDstn[1]*(1.0-tax_rate),0,self.IncUnemp)
-        PermShkDstn     = approxMeanOneLognormal(self.PermShkCount,sigma=self.PermShkStd[0],tail_N=0)
-        self.IncomeDstn = [combineIndepDstns(PermShkDstn,TranShkDstn)]
-        self.TranShkDstn = TranShkDstn
-        self.PermShkDstn = PermShkDstn
-        self.addToTimeVary('IncomeDstn')
-            
-              
-# =============================================================================
-# ==== Make an extension of the cstwMPCagent to include KinkyPrefConsumers ====
-# =============================================================================
-
-class cstwKinkyPrefAgent(ModelPref.KinkyPrefConsumerType):#ModelPref.PrefShockConsumerType,Model.KinkedRconsumerType,
-    '''
-    A consumer type in the cstwKinkyPref model, which incorporates multiplicative 
-    shocks to utility each period, and a different interest rate on saving vs borrowing.
-    
-    '''
-    def __init__(self,cycles=1,time_flow=True,**kwds):
-        '''
-        Make a new consumer type for the cstwKinkyPrefAgent model.
-        
-        Parameters
-        ----------
-        time_flow : boolean
-            Indictator for whether time is "flowing" forward for this agent.        
-        **kwds : keyword arguments
-            Any number of keyword arguments of the form key=value.  Each value
-            will be assigned to the attribute named in self.
-            
-        Returns
-        -------
-        new instance of cstwKinkyPrefAgent
-        '''
-        # Initialize an IndShockConsumerType with parameters for a KinkyPref consumer
-        Model.IndShockConsumerType.__init__(self,**Params.init_kinky_pref)
-        self.solution_terminal = deepcopy(ModelPref.KinkyPrefConsumerType.solution_terminal_)
-        self.time_flow = time_flow,
-        self.pseudo_terminal = False
-        
-        # Add consumer-type specific objects, copying to create independent versions
-        self.time_vary = deepcopy(ModelPref.KinkyPrefConsumerType.time_vary_)
-        self.time_inv = deepcopy(ModelPref.KinkyPrefConsumerType.time_inv_)
-        self.solveOnePeriod = ModelPref.solveConsKinkyPref # Choose correct solver
-        self.addToTimeInv('Rboro','Rsave')
-        self.delFromTimeInv('Rfree')     
-        self.makePrefShkHist()
-        self.update()
-        self.updatePrefShockProcess()
-            
-    def simulateCSTW(self):
-        '''
-        The simulation method for the no aggregate shocks version of the model.
-        Initializes the agent type, simulates a history of state and control
-        variables, and stores the wealth history in self.W_history and the
-        annualized MPC history in self.kappa_history.
-        
-        Parameters
-        ----------
-        none
-            
-        Returns
-        -------
-        none
-        '''
-        self.initializeSim()
-        self.simConsHistory()
-        self.W_history = self.pHist*self.bHist
-        self.W_history[self.W_history <= 0] /= self.Rboro # Note the divide AND assign operator /=
-        self.W_history[self.W_history > 0] /= self.Rsave
-        myf.write(str(self.W_history.min()) + "\n")
-        myf.close
-        if Params.do_lifecycle:
-            self.W_history = self.W_history*self.cohort_scale
-        self.kappa_history = 1.0 - (1.0 - self.MPChist)**4
-        
-    def update(self):
-        '''
-        Update the income process, the assets grid, and the terminal solution.
-        
-        Parameters
-        ----------
-        none
-            
-        Returns
-        -------
-        none
-        '''
-        orig_flow = self.time_flow        
-        if self.cycles == 0: # hacky fix for labor supply l_bar
-            self.updateIncomeProcessAlt()
-        else:
-            self.updateIncomeProcess()
-        self.updateAssetsGrid()
-        self.updateSolutionTerminal()
-        self.timeFwd()
-        self.resetRNG()
-        if self.cycles > 0:
-            self.IncomeDstn = Model.applyFlatIncomeTax(self.IncomeDstn,
-                                                 tax_rate=self.tax_rate,
-                                                 T_retire=self.T_retire,
-                                                 unemployed_indices=range(0,(self.TranShkCount+1)*
-                                                 self.PermShkCount,self.TranShkCount+1))          
-        self.makeIncShkHist()
-        if not orig_flow:
-            self.timeRev()
-            
-    def updateIncomeProcessAlt(self):
-        '''
-        An alternative method for constructing the income process in the infinite
-        horizon model, where the labor supply l_bar creates a small oddity.
-        
-        Parameters
-        ----------
-        none
-            
-        Returns
-        -------
-        none
-        '''
-        tax_rate = (self.IncUnemp*self.UnempPrb)/(self.l_bar*(1.0-self.UnempPrb))
-        TranShkDstn     = deepcopy(approxMeanOneLognormal(self.TranShkCount,sigma=self.TranShkStd[0],tail_N=0))
-        TranShkDstn[0]  = np.insert(TranShkDstn[0]*(1.0-self.UnempPrb),0,self.UnempPrb)
-        TranShkDstn[1]  = np.insert(self.l_bar*TranShkDstn[1]*(1.0-tax_rate),0,self.IncUnemp)
-        PermShkDstn     = approxMeanOneLognormal(self.PermShkCount,sigma=self.PermShkStd[0],tail_N=0)
-        self.IncomeDstn = [combineIndepDstns(PermShkDstn,TranShkDstn)]
-        self.TranShkDstn = TranShkDstn
-        self.PermShkDstn = PermShkDstn
-        self.addToTimeVary('IncomeDstn')
-            
-
-def assignRdistribution(type_list,R_list,isRboro):
-    '''
-    Assigns the interest rate values in R_list to the types in type_list.  If
-    there is heterogeneity beyond the interest rate, then the same value is
-    assigned to consecutive types (that is why two while loops are used). It 
-    allows to assign heterogeneity in the interest rate on saving and on borrowing.
-    
-    Parameters
-    ----------
-    type_list : [agent]
-        The list of types that should be assigned the different values.
-    R_list : [float] or np.array
-        List of values to assign to the types.
-    isRboro : boolean
-        Assigns the values in R_list to the interest rate for borrowing when 
-        True, to the interest rate on saving when False
-        
-    Returns
-    -------
-    none
-    '''
-    R_count = len(R_list)
-    type_N = len(type_list)/R_count
-    j = 0
-    b = 0
-    while j < len(type_list):
-        t = 0
-        while t < type_N:
-            if isRboro:
-                type_list[j](Rboro = R_list[b])
-            else:
-                type_list[j](Rsave = R_list[b])
-            t += 1
-            j += 1
-        b += 1          
-
-
-# =============================================================================
-# ============= Make some data analysis and reporting tools ===================
-# =============================================================================
-
-def calculatePctHHassetsDifference(sim_wealth,weights,target_pctHHassets):
-    '''
-    Calculates the absolute distance between the simulated proportion of HH 
-    having exactly zero liquid assets and the true U.S. proportion.
-    
-    Parameters
-    ----------
-    sim_wealth : numpy.array
-        Array with simulated wealth values.
-    weights : numpy.array
-        List of weights for each row of sim_wealth.
-    target_pctHHassets : float
-        Actual U.S. proportion of HH having exactly zero liquid assets to match.
-        
-    Returns
-    -------
-    distance : float
-        Absolute distance between simulated and actual proportion of HH having 
-        exactly zero liquid assets.
-    '''
-    sim_pctHHassets = float((sim_wealth == 0).sum())/sim_wealth.size
-    distance = (sim_pctHHassets - target_pctHHassets)**1.0
-    return distance        
-        
-
-def simulatePctHHassetsDifference(Rboro,nabla,N,type_list,weights,target):
-    '''
-    Assigns a uniform distribution over Rboro with width 2*nabla and N points, then
-    solves and simulates all agent types in type_list and compares the simuated
-    proportion of HH having zero liquid assets to the target proportion.
-    
-    Parameters
-    ----------
-    Rboro : float
-        Center of the uniform distribution of rates on borrowing.
-    nabla : float
-        Width of the uniform distribution of rates on borrowing.
-    N : int
-        Number of discrete consumer types.
-    type_list : [cstwKinkedRagent] or [cstwKinkyPrefAgent]
-        List of agent types to solve and simulate after assigning rates on borrowing.
-    weights : np.array
-        Age-conditional array of population weights.
-    target : float
-        Target proportion of HH having zero liquid assets.
-        
-    Returns
-    -------
-    my_diff : float
-        Difference between simulated and target proportion of HH having zero 
-        liquid assets.
-    '''
-    if type(Rboro) in (list,np.ndarray,np.array):
-        Rboro = Rboro[0]
-    Rboro_list = approxUniform(N,Rboro-nabla,Rboro+nabla)[1] # only take values, not probs
-    assignRdistribution(type_list,Rboro_list,isRboro=True)
-    multiThreadCommandsFake(type_list,Rboro_point_commands)
-    # First argument below is the definition of sim_wealth    
-    my_diff = calculatePctHHassetsDifference(np.vstack((this_type.W_history for this_type in type_list)),
-                                         np.tile(weights/float(N),N),target)
-    return my_diff
-
-
-# Define the main simulation process for matching the K/Y ratio
-def simulateKYratioDifferenceRboro(Rboro,nabla,N,type_list,weights,total_output,target):
-    '''
-    Assigns a uniform distribution over Rboro with width 2*nabla and N points, then
-    solves and simulates all agent types in type_list and compares the simuated
-    K/Y ratio to the target K/Y ratio.
-    
-    Parameters
-    ----------
-    Rboro : float
-        Center of the uniform distribution of discount factors.
-    nabla : float
-        Width of the uniform distribution of discount factors.
-    N : int
-        Number of discrete consumer types.
-    type_list : [cstwMPCagent]
-        List of agent types to solve and simulate after assigning discount factors.
-    weights : np.array
-        Age-conditional array of population weights.
-    total_output : float
-        Total output of the economy, denominator for the K/Y calculation.
-    target : float
-        Target level of capital-to-output ratio.
-        
-    Returns
-    -------
-    my_diff : float
-        Difference between simulated and target capital-to-output ratios.
-    '''
-    if type(Rboro) in (list,np.ndarray,np.array):
-        Rboro = Rboro[0]
-    Rboro_list = approxUniform(N,Rboro-nabla,Rboro+nabla)[1] # only take values, not probs
-    assignRdistribution(type_list,Rboro_list,isRboro=True)
-    multiThreadCommandsFake(type_list,Rboro_point_commands)
-    my_diff = calculateKYratioDifference(np.vstack((this_type.W_history for this_type in type_list)),
-                                         np.tile(weights/float(N),N),total_output,target)
-    return my_diff
-    
-
-def makeCSTWresultsRboro(Rboro,nabla,save_name=None):
-    '''
-    Produces a variety of results for the cstwKinkedR/cstwKinkyPref models 
-    (usually after estimating).
-    
-    Parameters
-    ----------
-    Rboro : float
-        Center of the uniform distribution of rates on borrowing
-    nabla : float
-        Width of the uniform distribution of rates on borrowing
-    save_name : string
-        Name to save the calculated results, for later use in producing figures
-        and tables, etc.
-        
-    Returns
-    -------
-    none
-    '''
-    # Once Rboro and nabla have been estimated, generate a distribution of 
-    # Rboro that will generate a good approx to the empirical distribution
-    Rboro_list = approxUniform(N=Params.pref_type_count,bot=Rboro-nabla,top=Rboro+nabla)[1] 
-    assignRdistribution(est_type_list,Rboro_list,isRboro=True)
-    multiThreadCommandsFake(est_type_list,Rboro_point_commands)
-    
-    lorenz_distance = np.sqrt(RboroDistObjective(nabla))
-    
-    makeCSTWstats(Rboro,nabla,est_type_list,Params.age_weight_all,lorenz_distance,save_name)  
-
-
-###############################################################################
-
-
 
 # Only run below this line if module is run rather than imported:
 if __name__ == "__main__":
@@ -1011,8 +633,11 @@ if __name__ == "__main__":
     
     # Set target Lorenz points and K/Y ratio (MOVE THIS TO SetupParams)
     if Params.do_liquid:
-        lorenz_target = np.array([0.0, 0.004, 0.025,0.117])
-        KY_target = 6.60
+            #!!! Temporal in order to allow for variable number of percentiles to match
+        lorenz_target = getLorenzShares(Params.SCF_wealth,weights=Params.SCF_weights,percentiles=Params.percentiles_to_match) 
+        #lorenz_target = np.array([0.0, 0.004, 0.025,0.117])
+        #KY_target = 6.60
+        assetHoldings_target = 0
     else: # This is hacky until I can find the liquid wealth data and import it
         lorenz_target = getLorenzShares(Params.SCF_wealth,weights=Params.SCF_weights,percentiles=Params.percentiles_to_match)
         #lorenz_target = np.array([-0.002, 0.01, 0.053,0.171])
@@ -1028,7 +653,7 @@ if __name__ == "__main__":
         cohort_scale_array = np.tile(np.reshape(cohort_scale,(Params.total_T+1,1)),(1,Params.sim_pop_size))
         
         # Make base consumer types for each education level
-        DropoutType = cstwMPCagent(**Params.init_dropout)
+        DropoutType = cstwKinkyPrefAgent(**Params.init_dropout)
         DropoutType.a_init = a_init
         DropoutType.cohort_scale = cohort_scale_array
         HighschoolType = deepcopy(DropoutType)
@@ -1051,11 +676,7 @@ if __name__ == "__main__":
     
     else:
         # Make the base infinite horizon type and assign income shocks
-    
-        # ACTIVATE THE TYPE OF CONSUMER YOU WILL BE ANALYZING!
-        #InfiniteType = cstwMPCagent(**Params.init_infinite)         # Original case
-        InfiniteType = cstwKinkedRagent(**Params.init_kinked_R)      # Kinky case
-        #InfiniteType = cstwKinkyPrefAgent(**Params.init_kinky_pref) # KinkyPref case
+        InfiniteType = cstwKinkyPrefAgent(**Params.init_kinky_pref)
         InfiniteType.tolerance = 0.0001
         InfiniteType.a_init = 0*np.ones_like(a_init)
         
@@ -1124,6 +745,7 @@ if __name__ == "__main__":
     # Make the objective function for the beta-dist estimation
     def betaDistObjective(nabla):
         # Make the "intermediate objective function" for the beta-dist estimation
+        #print('Trying nabla=' + str(nabla))
         intermediateObjective = lambda DiscFac : simulateKYratioDifference(DiscFac,
                                                                  nabla=nabla,
                                                                  N=Params.pref_type_count,
@@ -1141,8 +763,6 @@ if __name__ == "__main__":
         sim_weights = np.tile(np.repeat(Params.age_weight_all,Params.sim_pop_size),N)
         my_diff = calculateLorenzDifference(sim_wealth,sim_weights,Params.percentiles_to_match,lorenz_target)
         print('DiscFac=' + str(DiscFac_new) + ', nabla=' + str(nabla) + ', diff=' + str(my_diff))
-        myf.write('DiscFac=' + str(DiscFac_new) + ', nabla=' + str(nabla) + ', diff=' + str(my_diff) + "\n")
-        myf.close
         if my_diff < Params.diff_save:
             Params.DiscFac_save = DiscFac_new
         return my_diff
@@ -1297,181 +917,4 @@ if __name__ == "__main__":
         agg_shock_weights = np.concatenate((np.zeros(200),np.ones(Params.sim_periods_agg_shocks-200)))
         agg_shock_weights = agg_shock_weights/np.sum(agg_shock_weights)
         makeCSTWstats(beta_agg,nabla_agg,agg_shocks_type_list,agg_shock_weights)
-
-
-
-###############################################################################
-###############################################################################
-
-if Params.do_Kinky_cases:
-    
-    #==============================================================
-    # =====Estimation of cstw model with kinky consumers ==========
-    #==============================================================
-    
-    # Currently only works for these cases
-    Params.do_lifecycle = False 
-    Params.do_tractable = False
-    do_agg_shocks = False
-    Params.run_estimation = True
-    
-    # =================================================================
-    # ====== Make the list of consumer types for estimation ===========
-    #==================================================================
-    
-    # Set target Lorenz points and HH with zero liquid assets (MOVE THIS TO SetupParams)
-    if Params.do_liquid: #The line below should change once the data is available
-        lorenz_target = getLorenzShares(Params.SCF_wealth,weights=Params.SCF_weights,percentiles=Params.percentiles_to_match)
-        KY_target = 6.60  # Temporal, just to verify Kinky models
-    else:
-        lorenz_target = getLorenzShares(Params.SCF_wealth,weights=Params.SCF_weights,percentiles=Params.percentiles_to_match)
-        KY_target = 10.26 # Temporal, just to verify Kinky models
-    # Proportion of U.S. households having exactly zero liquid assets
-    pctHHassets_target = float((Params.SCF_wealth == 0).sum())/len(Params.SCF_wealth)    
-    print('pctHHassets_target is: ' + str(pctHHassets_target)) 
         
-       
-    # Make a vector of initial wealth-to-permanent income ratios
-    a_init = drawDiscrete(N=Params.sim_pop_size,P=Params.a0_probs,X=Params.a0_values,seed=Params.a0_seed)
-                                             
-    # Make the list of types for this run
-    # Make the base infinite horizon type and assign income shocks
-    InfiniteType = cstwKinkedRagent(**Params.init_kinked_R)
-    InfiniteType.tolerance = 0.0001
-    InfiniteType.a_init = 0*np.ones_like(a_init)
-    
-    # Make histories of permanent income levels for the infinite horizon type
-    p_init_base = np.ones(Params.sim_pop_size,dtype=float)
-    InfiniteType.p_init = p_init_base
-    
-    short_type_list = [InfiniteType]
-    spec_add = 'IH'
-
-    
-    # Expand the estimation type list if doing Rboro-dist
-    if Params.do_Rboro_dist:
-        long_type_list = []
-        for j in range(Params.pref_type_count):
-            long_type_list += deepcopy(short_type_list)
-        est_type_list = long_type_list
-    else:
-        est_type_list = short_type_list
-    
-    if Params.do_liquid:
-        wealth_measure = 'Liquid'
-    else:
-        wealth_measure = 'NetWorth'
-    
-    
-    # =================================================================
-    # ====== Define estimation objectives =============================
-    #==================================================================
-
-    
-    
-    # Set commands for the beta-point estimation
-    Rboro_point_commands = ['solve()','unpackcFunc()','timeFwd()','simulateCSTW()']
-        
-    # Make the objective function for the Rboro-point estimation
-    RboroPointObjective = lambda Rboro : simulateKYratioDifferenceRboro(Rboro,
-                                                                 nabla=0,
-                                                                 N=1,
-                                                                 type_list=est_type_list,
-                                                                 weights=Params.age_weight_all,
-                                                                 total_output=Params.total_output,
-                                                                 target=KY_target)
-                                                                 
-    # Make the objective function for the Rboro-dist estimation
-    def RboroDistObjective(nabla):
-        # Make the "intermediate objective function" for the Rboro-dist estimation
-        intermediateObjective = lambda Rboro : simulateKYratioDifferenceRboro(Rboro,
-                                                                 nabla=nabla,
-                                                                 N=Params.pref_type_count,
-                                                                 type_list=est_type_list,
-                                                                 weights=Params.age_weight_all,
-                                                                 total_output=Params.total_output,
-                                                                 target=KY_target)
-        top = 1.2
-        bottom = Params.bottomRboro  # Implicitly assumes that a spread exist
-        Rboro_new = brentq(intermediateObjective,bottom,top,xtol=10**(-8))
-        print('Max of W_history is ' + str(est_type_list[0].W_history.max()))
-        print('Min of W_history is ' + str(est_type_list[0].W_history.min()))
-        N=Params.pref_type_count
-        sim_wealth = (np.vstack((this_type.W_history for this_type in est_type_list))).flatten()
-        sim_weights = np.tile(np.repeat(Params.age_weight_all,Params.sim_pop_size),N)
-        my_diff = calculateLorenzDifference(sim_wealth,sim_weights,Params.percentiles_to_match,lorenz_target)
-        print('Rboro=' + str(Rboro_new) + ', nabla=' + str(nabla) + ', diff=' + str(my_diff))
-        myf.write('Rboro=' + str(Rboro_new) + ', nabla=' + str(nabla) + ', diff=' + str(my_diff) + "\n")
-        myf.close
-        if my_diff < Params.diff_save:
-            Params.Rboro_save = Rboro_new
-        return my_diff
-
-##### Code below for when the restriction is not K/Y but AssetHoldings = 0    
-#    # Set commands for the Rboro-point estimation
-#    Rboro_point_commands = ['solve()','unpackcFunc()','timeFwd()','simulateCSTW()']
-#        
-#    # Make the objective function for the Rboro-point estimation
-#    RboroPointObjective = lambda Rboro : simulatePctHHassetsDifference(Rboro,
-#                                                                 nabla=0,
-#                                                                 N=1,
-#                                                                 type_list=est_type_list,
-#                                                                 weights=Params.age_weight_all,
-#                                                                 target=pctHHassets_target)
-#                                                                 
-#    # Make the objective function for the Rboro-dist estimation
-#    def RboroDistObjective(nabla):   #!!! Finds the nabla that minimizes the distance with the target
-#        # Make the "intermediate objective function" for the Rboro-dist estimation
-#        #print('Trying nabla=' + str(nabla))
-#        intermediateObjective = lambda Rboro : simulatePctHHassetsDifference(Rboro,
-#                                                                 nabla=nabla,
-#                                                                 N=Params.pref_type_count,
-#                                                                 type_list=est_type_list,
-#                                                                 weights=Params.age_weight_all,
-#                                                                 target=pctHHassets_target)
-#    
-#        top = 1.2
-#        bottom = Params.bottomRboro  # Implicitly assumes that a spread exist
-#        Rboro_new = brentq(intermediateObjective,bottom,top,xtol=10**(-8)) 
-#        print('Max of W_history is ' + str(est_type_list[0].W_history.max()))
-#        print('Min of W_history is ' + str(est_type_list[0].W_history.min()))
-#        N=Params.pref_type_count
-#        sim_wealth = (np.vstack((this_type.W_history for this_type in est_type_list))).flatten()
-#        sim_weights = np.tile(np.repeat(Params.age_weight_all,Params.sim_pop_size),N)
-#        my_diff = calculateLorenzDifference(sim_wealth,sim_weights,Params.percentiles_to_match,lorenz_target)
-#        print('Rboro=' + str(Rboro_new) + ', nabla=' + str(nabla) + ', diff=' + str(my_diff))
-#        if my_diff < Params.diff_save:
-#            Params.Rboro_save = Rboro_new
-#        return my_diff
-    
-    
-    
-    # =================================================================
-    # ========= Estimating the model ==================================
-    #==================================================================
-    
-    if Params.run_estimation:
-        # Estimate the model and time it
-        t_start = time()
-        if Params.do_Rboro_dist:
-            bracket = (0,0.015)
-            # bracket = (0,0.015) # large nablas break IH version in cstw, but in kinked?
-            res = minimize_scalar(RboroDistObjective, bounds=bracket, method='bounded')
-            nabla = res.x
-            #nabla = golden(RboroDistObjective,brack=bracket,tol=10**(-4))        
-            Rboro = Params.Rboro_save
-            spec_name = spec_add + 'RboroDist' + wealth_measure
-        else:
-            nabla = 0 # Used when call makeCSTWresultsRboro below
-            bot = Params.bottomRboro # Match with that used for Rboro-Dist
-            top = 1.2
-            Rboro = brentq(RboroPointObjective,bot,top,xtol=10**(-8))
-            spec_name = spec_add + 'RboroPoint' + wealth_measure
-        t_end = time()
-        print('Estimate is Rboro=' + str(Rboro) + ', nabla=' + str(nabla) + ', took ' + str(t_end-t_start) + ' seconds.')
-        #spec_name=None
-        makeCSTWresultsRboro(Rboro,nabla,save_name=spec_name) #spec_name) #in order to save figures
-
-
-
-os.system('say "Your code has finished"')        

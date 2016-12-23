@@ -1,6 +1,6 @@
 '''
 Specifies examples of the full set of parameters required to solve various
-consumption-saving models.  These models can be found in ConsIndShockModel,
+consumption-saving models.  Such models begin with "Cons", e.g. ConsIndShockModel,
 ConsAggShockModel, ConsPrefShockModel, and ConsMarkovModel.
 '''
 from copy import copy
@@ -10,7 +10,7 @@ import numpy as np
 # --- Define all of the parameters for the perfect foresight model ------------
 # -----------------------------------------------------------------------------
 
-CRRA = 7.0                          # Coefficient of relative risk aversion
+CRRA = 2.0                          # Coefficient of relative risk aversion
 Rfree = 1.03                        # Interest factor on assets
 DiscFac = 0.96                      # Intertemporal discount factor
 LivPrb = [0.98]                     # Survival probability

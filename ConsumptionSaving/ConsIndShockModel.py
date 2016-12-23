@@ -1411,6 +1411,9 @@ def solveConsKinkedR(solution_next,IncomeDstn,LivPrb,DiscFac,CRRA,Rboro,Rsave,
         resources mNrmMin, normalized human wealth hNrm, and bounding MPCs MPCmin
         and MPCmax.  It might also have a value function vFunc.
     '''
+    if Rboro < Rsave:    
+        print('Rsave is: ' + str(Rsave)) 
+        print('Rboro is: ' + str(Rboro)) 
     assert Rboro>=Rsave, 'Interest factor on debt less than interest factor on savings!'    
     
     solver = ConsKinkedRsolver(solution_next,IncomeDstn,LivPrb,

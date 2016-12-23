@@ -8,13 +8,15 @@ import os
 
 # Choose percentiles of the data to match and which estimation to run
 do_lifecycle = False          # Use lifecycle model if True, perpetual youth if False
-do_beta_dist = True          # Do beta-dist version if True, beta-point if False
-run_estimation = False         # Runs the estimation if True
+do_beta_dist = False          # Do beta-dist version if True, beta-point if False 
+do_Rboro_dist = False          # Do Rboro-dist version if True, Rboro-point if False
+do_Kinky_cases = False         # Do KinkedR and KinkyPref cases
+run_estimation = True         # Runs the estimation if True 
 find_beta_vs_KY = False       # Computes K/Y ratio for a wide range of beta; should have do_beta_dist = False
 do_sensitivity = [False, False, False, False, False, False, False, False] # Choose which sensitivity analyses to run: rho, xi_sigma, psi_sigma, mu, urate, mortality, g, R
-do_liquid = False             # Matches liquid assets data when True, net worth data when False
+do_liquid = False             # Matches liquid assets data when True, net worth data when False 
 do_tractable = False           # Uses a "tractable consumer" rather than solving full model when True
-do_agg_shocks = True         # Solve the FBS aggregate shocks version of the model
+do_agg_shocks = False         # Solve the FBS aggregate shocks version of the model 
 SCF_data_file = 'SCFwealthDataReduced.txt'
 percentiles_to_match = [0.2, 0.4, 0.6, 0.8]    # Which points of the Lorenz curve to match in beta-dist (must be in (0,1))
 #percentiles_to_match = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] # Can use this line if you want to match more percentiles
@@ -36,7 +38,7 @@ UnempPrbRet = 0.0005          # Probabulity of "unemployment" while retired
 IncUnemp = 0.15               # Unemployment benefit replacement rate
 IncUnempRet = 0.0             # Ditto when retired
 P0_sigma = 0.4                # Standard deviation of initial permanent income
-BoroCnstArt = 0.0             # Artificial borrowing constraint
+BoroCnstArt = None             # Artificial borrowing constraint
 
 # Set grid sizes
 PermShkCount = 5              # Number of points in permanent income shock grid
@@ -287,6 +289,51 @@ aggregate_params = {'PermShkAggCount': PermShkAggCount,
 
 beta_save = DiscFac_guess # Hacky way to save progress of estimation
 diff_save = 1000000.0  # Hacky way to save progress of estimation
+
+
+# -----------------------------------------------------------------------------
+# -------- Define additional parameters for the "kinked R" model --------------
+# -----------------------------------------------------------------------------
+                                   # Apply to [Rboro,Rsave] the same transformation 
+                                   # used for Rfree in init_infinite
+Rboro = 1.15/LivPrb_i[0]           # Interest factor when borrowing
+Rsave = 1.01/LivPrb_i[0]           # Interest factor when saving
+bottomRboro = 1.075/LivPrb_i[0]    # Used in the function 'RboroDistObjective' when calling brentq
+
+# Make a dictionary to specify a "kinked R" idiosyncratic shock consumer
+init_kinked_R = copy(init_infinite)
+init_kinked_R['DiscFac'] = 0.99     # value in Table 2 of cstw paper
+del init_kinked_R['Rfree']          # get rid of constant interest factor
+init_kinked_R['Rboro'] = Rboro
+init_kinked_R['Rsave'] = Rsave
+init_kinked_R['BoroCnstArt'] = None # kinked R is a bit silly if borrowing not allowed
+init_kinked_R['CubicBool'] = False  # kinked R currently only compatible with linear cFunc
+init_kinked_R['aXtraCount'] = 48    # ...so need lots of extra gridpoints to make up for it
+
+
+# -----------------------------------------------------------------------------
+# ----- Define additional parameters for the preference shock model -----------
+# -----------------------------------------------------------------------------
+
+PrefShkCount = 12        # Number of points in discrete approximation to preference shock dist
+PrefShk_tail_N = 4       # Number of "tail points" on each end of pref shock dist
+PrefShkStd = [0.30]      # Standard deviation of utility shocks
+
+# Make a dictionary to specify a preference shock consumer
+init_preference_shocks = copy(init_infinite)
+init_preference_shocks['PrefShkCount'] = PrefShkCount
+init_preference_shocks['PrefShk_tail_N'] = PrefShk_tail_N
+init_preference_shocks['PrefShkStd'] = PrefShkStd
+init_preference_shocks['aXtraCount'] = 48
+init_preference_shocks['CubicBool'] = False # pref shocks currently only compatible with linear cFunc
+
+# Make a dictionary to specify a "kinky preference" consumer, who has both shocks
+# to utility and a different interest rate on borrowing vs saving
+init_kinky_pref = copy(init_kinked_R)
+init_kinky_pref['PrefShkCount'] = PrefShkCount
+init_kinky_pref['PrefShk_tail_N'] = PrefShk_tail_N
+init_kinky_pref['PrefShkStd'] = PrefShkStd
+
 
 
 if __name__ == '__main__':
